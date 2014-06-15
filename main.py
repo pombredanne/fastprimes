@@ -11,4 +11,4 @@ def main():
 
 if __name__ == '__main__':
   main()
-  test_bf()
+  #test_bf()

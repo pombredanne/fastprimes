@@ -14,30 +14,42 @@ class bloom_filter():
     self.k = k
     self.m = m
     self.maxNum = maxNum 
-    self.array = 2 ** long(m) # when OR'd with maxNum, it equals 0
     if to_build:
       self.__build()
 
   def deep_copy(self):
     copy = bloom_filter(self.k, self.m, self.maxNum, False)
     copy.funcs = self.funcs
+    copy.array = self.array # number assignment is by value
     return copy
 
   def __build(self):
     """Generate the necessary hash functions for this bloom filter"""
     print "Building %d hash functions..." % self.k
     self.funcs = [ lambda x: x ] * self.k
+    print "Building an array of length %d..." % self.m
+    self.array = 2 ** long(self.m) # when OR'd with maxNum, it equals 0
     print "Done."
+
+  def load(funcs_str, arr_str, maxNum):
+    bf_set = bloom_filter(len(funcs_str.split(":")), len(arr_str) / 2, maxNum, False)
+    bf_set.funcs = [[]] * bf_set.k # TODO
+    bf_set.array = int(arr_str, 16)
 
   # SETTERS
 
   def add(self, n):
     self.array |= n
+    return self
+
+  def setArray(self, array):
+    self.array = array
+    return self
+
+  # GETTERS
 
   def contains(self, n):
     return n  == (self.array & n)
-
-  # GETTERS
 
   def getArrayVal(self):
     return self.array & self.maxNum
