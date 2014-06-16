@@ -4,22 +4,23 @@
 
 import random
 
-__primes = [2]
+__primes = [2, 3, 5, 7, 11, 13]
 
 def random_prime():
   global __primes
-  last_prime = __primes[-1]
-  # not actually random...
-  for n in range(last_prime, 10000):
-    is_prime = True
-    for i in range(len(__primes)):
-      if n % __primes[i] == 0:
-        is_prime = False
-        break
-    if is_prime:
-      __primes.append(n)
-      break
-  return __primes[-1]
+  if len(__primes) == 6:
+    last_prime = __primes[-1]
+    # not actually random...
+    for n in range(last_prime+1, 100000):
+      is_prime = True
+      for i in range(len(__primes)):
+        if n % __primes[i] == 0:
+          is_prime = False
+          break
+      if is_prime:
+        __primes.append(n)
+  # end if
+  return random.choice(__primes)
 
 class bloom_filter():
   """A naive implementation of bloom filters. Specifically targetting the use
