@@ -8,6 +8,8 @@ from pdbf import pdbf, pdbf_ord, test_pdbf
 def main():
   primes = pdbf_ord(3, 7, 3)
   print primes
+  print "primes", primes.primes.getArrayRepr()
+  print "composites", primes.composites.getArrayRepr()
 
 if __name__ == '__main__':
   main()

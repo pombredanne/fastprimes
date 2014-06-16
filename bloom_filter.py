@@ -2,6 +2,25 @@
 # Trevor Pottinger
 # Sun Jun 15 10:27:29 PDT 2014
 
+import random
+
+__primes = [2]
+
+def random_prime():
+  global __primes
+  last_prime = __primes[-1]
+  # not actually random...
+  for n in range(last_prime, 10000):
+    is_prime = True
+    for i in range(len(__primes)):
+      if n % __primes[i] == 0:
+        is_prime = False
+        break
+    if is_prime:
+      __primes.append(n)
+      break
+  return __primes[-1]
+
 class bloom_filter():
   """A naive implementation of bloom filters. Specifically targetting the use
   of two filters, such that they are disjoint subsets of one larger set. The
@@ -21,14 +40,25 @@ class bloom_filter():
     copy = bloom_filter(self.k, self.m, self.maxNum, False)
     copy.funcs = self.funcs
     copy.array = self.array # number assignment is by value
+    copy.arrayMask = self.arrayMask
     return copy
 
   def __build(self):
-    """Generate the necessary hash functions for this bloom filter"""
+    """Generate the necessary hash functions for this bloom filter. A
+    hash function takes a number less than maxNum and returns a number
+    in the range [0,m]"""
     print "Building %d hash functions..." % self.k
-    self.funcs = [ lambda x: x ] * self.k
+    def helper():
+      m = random_prime()
+      b = random_prime()
+      print m, "* n +", b
+      def hash_func(n):
+        return (n*m + b) % (self.m)
+      return hash_func
+    self.funcs = [ helper() for _ in range(self.k) ]
     print "Building an array of length %d..." % self.m
-    self.array = 2 ** long(self.m) # when OR'd with maxNum, it equals 0
+    self.array = 2 ** long(self.m) # when AND'd with arrayMask
+    self.arrayMask = (2 ** long(self.m)) - 1
     print "Done."
 
   def load(funcs_str, arr_str, maxNum):
@@ -39,7 +69,12 @@ class bloom_filter():
   # SETTERS
 
   def add(self, n):
-    self.array |= n
+    # map hashes on n, results in list of indicies
+    hashes = map(lambda f: f(n), self.funcs)
+    # map indicies to integer with that bit set
+    nums = map(lambda i: 1 << i, hashes)
+    final_hash = reduce(lambda a, num: a | num, nums, 0)
+    self.array |= final_hash
     return self
 
   def setArray(self, array):
@@ -52,10 +87,17 @@ class bloom_filter():
     return n  == (self.array & n)
 
   def getArrayVal(self):
-    return self.array & self.maxNum
+    return self.array & self.arrayMask
 
   def getArrayRepr(self):
-    return hex(self.getArrayVal()).lstrip('0x').rstrip('L')
+    s = hex(self.getArrayVal()).lstrip('0x').rstrip('L')
+    expected_len = self.m / 4 # expected string length
+    if len(s) < expected_len:
+      return '0' * (expected_len - len(s)) + s
+    elif len(s) > expected_len:
+      raise Exception("Array longer than expected")
+    else:
+      return s
 
   def getFunctionRepr(self):
     return "<function_repr>"
