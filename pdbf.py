@@ -45,7 +45,7 @@ class pdbf():
       from tqdm import tqdm
       ns = tqdm(ns, desc='Building disjoint sets', total=self.maxNum)
     for n in ns:
-      break # REMOVE this stops the build
+      #break # FIXME TODO REMOVE this stops the build
       #print "testing", n,
       if self.isPrime(n):
         #print "prime",
