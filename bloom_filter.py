@@ -72,7 +72,8 @@ class BloomFilter(object):
     # see http://en.wikipedia.org/wiki/Linear_congruential_generator
     # the first requirement is this easy because num_bits must be a power of 2
     #while (a - 1 % 2 != 0) or (a - 1 % 4 != 0):
-    while (a - 1 % 4 == 0):
+    #while (a - 1 % 4 == 0):
+    while not _is_coprime(a, num_bits):
       a = rand_num(1, num_bits-1)
     def __chunks(n):
       "Breaks n up into smaller ints, so each one is smaller than num_bits"
@@ -87,7 +88,7 @@ class BloomFilter(object):
       x = (a * ns[0] + c) % num_bits
       for i in range(1, len(ns)):
         # this doesnt quite smell right, b/c x is reused
-        x = (x + a * ns[i] + c) % num_bits
+        x = (x + a * ns[i]) % num_bits
       return x
     return __hash
 
