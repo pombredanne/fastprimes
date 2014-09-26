@@ -4,8 +4,13 @@
 
 import random
 from random import shuffle as rand_shuffle
+from random import randint as rand_num
+from fractions import gcd
 
 __primes = [2, 3, 5, 7, 11, 13]
+
+def _is_coprime(a, b):
+  return gcd(a, b) == 1
 
 def random_prime(maxN):
   global __primes
@@ -36,6 +41,7 @@ class BloomFilter(object):
 
   def __init__(self, num_funcs, num_bits, to_build=True):
     assert num_bits > 64, 'Only more than 64 bits please'
+    assert num_bits != 0 and ((num_bits & (num_bits - 1)) == 0), 'Only powers of two for now please'
     self.num_funcs = num_funcs
     self.num_bits = num_bits
     # begin needs building
@@ -54,6 +60,37 @@ class BloomFilter(object):
     copy.array_mask = self.array_mask
     return copy
 
+  @staticmethod
+  def __hash_builder(num_bits):
+    "Returns a linear congruence function"
+    assert num_bits > 0, 'Cant make an LCG for 0 modulus'
+    c = rand_num(0, num_bits-1)
+    while not _is_coprime(c, num_bits):
+      c = rand_num(0, num_bits-1)
+    a = rand_num(1, num_bits-1)
+    # second and third requirements of Hull-Dobell Theorem, respectively
+    # see http://en.wikipedia.org/wiki/Linear_congruential_generator
+    # the first requirement is this easy because num_bits must be a power of 2
+    #while (a - 1 % 2 != 0) or (a - 1 % 4 != 0):
+    while (a - 1 % 4 == 0):
+      a = rand_num(1, num_bits-1)
+    def __chunks(n):
+      "Breaks n up into smaller ints, so each one is smaller than num_bits"
+      ns = []
+      while n != 0:
+        ns.append(n % num_bits)
+        n = n / num_bits
+      return ns
+    print a, c, num_bits
+    def __hash(n):
+      ns = __chunks(n)
+      x = (a * ns[0] + c) % num_bits
+      for i in range(1, len(ns)):
+        # this doesnt quite smell right, b/c x is reused
+        x = (x + a * ns[i] + c) % num_bits
+      return x
+    return __hash
+
   def __build(self):
     """Generate the necessary hash functions for this bloom filter. A
     hash function takes a number and returns a number in the range 
@@ -63,11 +100,7 @@ class BloomFilter(object):
     small_enough = lambda prime: prime < self.num_bits
     some_primes = filter(small_enough, BloomFilter.primes)
     rand_shuffle(some_primes) # side effects :(
-    def helper(index, primes, num_bits):
-      m = primes[2*index]
-      b = primes[2*index+1]
-      return lambda n: (n*m + b) % self.num_bits
-    self.funcs = [ helper(i, some_primes, self.num_bits) for i in range(self.num_funcs) ]
+    self.funcs = [ BloomFilter.__hash_builder(self.num_bits) for _ in range(self.num_funcs) ]
     print "Building an array of length %d..." % self.num_bits
     self.array = 1 << self.num_bits
     self.array_mask = (1 << self.num_bits) - 1
