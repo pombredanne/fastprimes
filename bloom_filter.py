@@ -33,7 +33,7 @@ def _hash_builder(num_bits):
     x = (a * ns[0] + c) % num_bits
     for i in range(1, len(ns)):
       # this doesnt quite smell right, b/c x is reused
-      x = (x + a * ns[i]) % num_bits
+      x = (a * x + ns[i]) % num_bits
     return x
   return __hash
 
