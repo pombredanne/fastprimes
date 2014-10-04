@@ -2,7 +2,9 @@
 # Trevor Pottinger
 # Sun Jun 15 10:27:29 PDT 2014
 
+import math
 import random
+
 from random import shuffle as rand_shuffle
 from random import randint as rand_num
 from fractions import gcd
@@ -72,10 +74,9 @@ class BloomFilter(object):
     [0,num_bits]"""
     print "Building %d hash functions..." % self.num_funcs
     self.funcs = [ _hash_builder(self.num_bits) for _ in range(self.num_funcs) ]
-    print "Building an array of length %d..." % self.num_bits
+    print "Building an array of length 2^%d (%d)..." % (math.log(self.num_bits, 2), self.num_bits)
     self.array = 1 << self.num_bits
     self.array_mask = (1 << self.num_bits) - 1
-    print "Done."
     self.built = True
 
   def load(funcs_str, arr_str):
