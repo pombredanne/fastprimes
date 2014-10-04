@@ -57,6 +57,7 @@ class BloomFilter(object):
     self.array = 0
     self.array_mask = 0
     self.built = False
+    self.num_adds = 0
     # end needs building
     if to_build:
       self.__build()
@@ -87,6 +88,7 @@ class BloomFilter(object):
   # SETTERS
 
   def add(self, n):
+    self.num_adds += 1
     self.array |= self.get_hash(n)
     return self
 

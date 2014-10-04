@@ -46,8 +46,6 @@ class FastPrimes(object):
   def isPrime(self, n):
     bf_prime = self.primes_bloom_filter.contains(n)
     bf_composite = self.fps_bloom_filter.contains(n)
-    if n == 2:
-      print bf_prime, bf_composite
     if bf_prime and not bf_composite:
       return True
     else:
@@ -56,18 +54,20 @@ class FastPrimes(object):
   def evaluate(self, primes):
     """Tests every number between the first and last primes, including the
     numbers not in primes. We use the primes array as the source of truth."""
-    num_false_positives, min_false_positive = (0, primes[-1] + 1)
+    num_false_positives, num_double_fps, min_false_positive = (0, 0, primes[-1] + 1)
     for i in range(primes[0], primes[-1]):
       true_prime = i in primes
       my_prime = self.isPrime(i)
       if true_prime and not my_prime:
-        print i
-        assert False, 'False negatives NEVER happen'
+        num_double_fps += 1
       elif not true_prime and my_prime:
         num_false_positives += 1
         if i < min_false_positive:
           min_false_positive = i
-    return (num_false_positives, min_false_positive)
+    return (num_false_positives, num_double_fps, min_false_positive)
+
+  def getCounts(self):
+    return (self.primes_bloom_filter.num_adds, self.fps_bloom_filter.num_adds)
 
 # main method, todo move to separate file
 if __name__ == '__main__':
@@ -90,5 +90,6 @@ if __name__ == '__main__':
     print "### Run %d ###" % (i+1)
     fprimes = FastPrimes(primes, num_funcs, num_bits, num_fp_funcs, num_fp_bits)
     print 'Evaluating results'
-    (fps, min_fp) = fprimes.evaluate(primes)
-    print 'False positives %d, min false pos %d' % (fps, min_fp)
+    (fps, in_both, min_fp) = fprimes.evaluate(primes)
+    print 'False positives %d, in both %d, min false pos %d' % (fps, in_both, min_fp)
+    print 'Counts=', fprimes.getCounts()
