@@ -27,24 +27,49 @@ def n_primes(n):
   print "Finished, generated a total of %d primes" % len(primes)
   return primes
 
-def evaluate(primes, bloomf):
-  """Tests every number between the first and last primes, including the
-  numbers not in primes. We use the primes array as the source of truth."""
-  false_positives, false_negatives = (0, 0)
-  min_false_positive = primes[-1] + 1 # not true, but helps logic
-  false_positive_list = []
-  for i in range(primes[0], primes[-1]):
-    true_prime = i in primes
-    bf_prime = bloomf.contains(i)
-    if true_prime and not bf_prime:
-      false_negatives += 1
-    elif not true_prime and bf_prime:
-      false_positive_list.append(i)
-      false_positives += 1
-      if i < min_false_positive:
-        min_false_positive = i
-  return (false_positives, false_negatives, min_false_positive, false_positive_list)
+class FastPrimes(object):
+  def __init__(self, primes, num_prime_funcs, num_prime_bits, num_fp_funcs, num_fp_bits):
+    self.primes_bloom_filter = BloomFilter(num_prime_funcs, num_prime_bits)
+    self.fps_bloom_filter = BloomFilter(num_fp_funcs, num_fp_bits)
+    print 'Adding primes'
+    for p in primes[:-1]: # why ignore the last prime?
+      self.primes_bloom_filter.add(p)
+    print 'Adding false positives..'
+    for i in range(primes[0], primes[-1]):
+      true_prime = i in primes
+      bf_prime = self.primes_bloom_filter.contains(i)
+      if true_prime and not bf_prime:
+        assert False, 'False negatives NEVER happen'
+      elif not true_prime and bf_prime:
+        self.fps_bloom_filter.add(i)
 
+  def isPrime(self, n):
+    bf_prime = self.primes_bloom_filter.contains(n)
+    bf_composite = self.fps_bloom_filter.contains(n)
+    if n == 2:
+      print bf_prime, bf_composite
+    if bf_prime and not bf_composite:
+      return True
+    else:
+      return False
+
+  def evaluate(self, primes):
+    """Tests every number between the first and last primes, including the
+    numbers not in primes. We use the primes array as the source of truth."""
+    num_false_positives, min_false_positive = (0, primes[-1] + 1)
+    for i in range(primes[0], primes[-1]):
+      true_prime = i in primes
+      my_prime = self.isPrime(i)
+      if true_prime and not my_prime:
+        print i
+        assert False, 'False negatives NEVER happen'
+      elif not true_prime and my_prime:
+        num_false_positives += 1
+        if i < min_false_positive:
+          min_false_positive = i
+    return (num_false_positives, min_false_positive)
+
+# main method, todo move to separate file
 if __name__ == '__main__':
   if len(sys.argv) == 7:
     num_primes = int(sys.argv[1])
@@ -63,11 +88,7 @@ if __name__ == '__main__':
   primes = n_primes(num_primes)
   for i in range(num_iterations):
     print "### Run %d ###" % (i+1)
-    prime_bloom_filter = BloomFilter(num_funcs, num_bits)
-    fp_bloom_filter = BloomFilter(num_fp_funcs, num_fp_bits)
-    for p in primes[:-1]: # why ignore the last prime?
-      prime_bloom_filter.add(p)
-    (fps, fns, min_fp, fp_list) = evaluate(primes, prime_bloom_filter)
-    for n in fp_list:
-      fp_bloom_filter.add(n)
-    print 'False positives %d, negatives %d, min false pos %d' % (fps, fns, min_fp)
+    fprimes = FastPrimes(primes, num_funcs, num_bits, num_fp_funcs, num_fp_bits)
+    print 'Evaluating results'
+    (fps, min_fp) = fprimes.evaluate(primes)
+    print 'False positives %d, min false pos %d' % (fps, min_fp)
